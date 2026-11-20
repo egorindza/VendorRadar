@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><UserSecretsId>VendorRadar.LocalDevelopment</UserSecretsId></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../VendorRadar.Infrastructure/VendorRadar.Infrastructure.csproj" /></ItemGroup>
+</Project>
