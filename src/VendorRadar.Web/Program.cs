@@ -113,7 +113,12 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    context.Response.Headers.CacheControl = "no-store";
+    context.Response.OnStarting(() =>
+    {
+        if (!context.Response.Headers.ContainsKey("Cache-Control"))
+            context.Response.Headers.CacheControl = "no-store";
+        return Task.CompletedTask;
+    });
     await next();
 });
 app.UseAuthorization();
