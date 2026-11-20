@@ -1,0 +1,14 @@
+@model IReadOnlyList<AccessRun>
+@{ ViewData["Title"] = "Чек-листы доступов"; }
+<section class="heading"><div><h1>Чек-листы доступов</h1><p>Открытые и завершённые процессы онбординга и оффбординга.</p></div>
+    @if (User.IsInRole(Roles.Security)) { <a class="button primary" href="/people/hire">＋ Онбординг</a> }
+</section>
+<section class="panel">
+@if (Model.Count == 0) { <p class="empty">Чек-листов пока нет.</p> }
+@foreach (var run in Model.OrderBy(x => x.CompletedAt is not null).ThenByDescending(x => x.StartedAt))
+{
+    var complete = run.Tasks.Count(x => x.CompletedAt is not null);
+    var badge = run.CompletedAt is null ? "В работе" : complete < run.Tasks.Count ? "Прерван" : "Закрыт";
+    <a class="radar-row run-list-row" href="/people/runs/@run.Id"><span class="tile @(run.Kind == RunKind.Offboarding ? "peach" : "mint")">✓</span><span class="radar-name"><strong>@run.Employee.Name</strong><small>@Labels.Run(run.Kind) · @run.StartedAt.ToString("dd.MM.yyyy HH:mm") UTC</small></span><span>@complete / @run.Tasks.Count</span><span class="badge @(run.CompletedAt is null ? "warning" : "neutral")">@badge</span></a>
+}
+</section>

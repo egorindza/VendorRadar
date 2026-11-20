@@ -1,0 +1,18 @@
+@model PurchaseForm
+@{ ViewData["Title"] = "Заявка на ПО"; var departments = (IReadOnlyList<Department>)ViewBag.Departments; }
+<a class="back-link" href="/purchases">‹ Заявки</a>
+<section class="heading"><div><h1>Заявка на ПО</h1><p>Укажите сервис, стоимость и задачу, которую он должен решить.</p></div></section>
+<form class="panel form-panel fields" method="post" action="/purchases/new">
+    @Html.AntiForgeryToken()
+    <div class="field-grid">
+        <label>Сервис<input asp-for="Name" required /></label>
+        <label>Домен<input asp-for="Domain" placeholder="example.com" required /></label>
+        <label>Категория<input asp-for="Category" list="purchase-categories" required /><datalist id="purchase-categories"><option>Дизайн</option><option>Коммуникации</option><option>CRM</option><option>Аналитика</option><option>Разработка</option></datalist></label>
+        @if (!User.IsInRole(Roles.Lead)) {
+        <label>Отдел<select asp-for="DepartmentId" required><option value="">Выберите отдел</option>@foreach (var dept in departments) { <option value="@dept.Id">@dept.Name</option> }</select></label> }
+        <label>Стоимость в месяц<input asp-for="MonthlyCost" type="number" min="0.01" max="100000000" step="0.01" required /></label>
+        <label>Валюта<select asp-for="Currency" asp-items="Html.GetEnumSelectList<Currency>()"></select></label>
+    </div>
+    <label>Обоснование<textarea asp-for="Reason" rows="4" required></textarea></label>
+    <div class="actions"><button class="button primary">Отправить на согласование</button><a class="button secondary" href="/purchases">Отмена</a></div>
+</form>

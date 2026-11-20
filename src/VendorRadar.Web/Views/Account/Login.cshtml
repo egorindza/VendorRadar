@@ -1,0 +1,36 @@
+@{ ViewData["Title"] = "Вход"; }
+<div class="login-grid">
+    <section class="login-visual">
+        <div class="radar-graphic" aria-hidden="true"><span></span><span></span><span></span><i></i><i></i><i></i></div>
+        <div class="login-copy">
+            <div class="eyebrow"><i></i> Управление корпоративным SaaS</div>
+            <h1>Подписки и доступы<br />под контролем</h1>
+            <p>Следите за продлениями, лицензиями и отзывом прав в одном рабочем пространстве.</p>
+        </div>
+    </section>
+    <section class="login-options">
+        <h2>Вход в VendorRadar</h2>
+        @if (ViewBag.Demo == true)
+        {
+            <p class="muted">Выберите компанию и роль.</p>
+            @foreach (var (name, key, note) in new[] { ("Northstar Studio", "northstar", "Полный демо-реестр"), ("Meridian Labs", "meridian", "Отдельная демо-компания") })
+            {
+                <section class="demo-box">
+                    <div class="demo-head"><span class="tile mint">@name[0]</span><div><strong>@name</strong><small>@note</small></div></div>
+                    <form method="post" action="/account/demo" class="demo-roles">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                        <button class="button primary" name="account" value="@("demo-" + key + "-finance")">CEO / FinOps</button>
+                        <button class="button secondary" name="account" value="@("demo-" + key + "-security")">IT Security Admin</button>
+                        <button class="button secondary" name="account" value="@("demo-" + key + "-lead")">Team Lead</button>
+                    </form>
+                </section>
+            }
+            <details class="password-login"><summary>Войти по паролю</summary><partial name="_Password" /></details>
+        }
+        else
+        {
+            <partial name="_Password" />
+        }
+    </section>
+</div>

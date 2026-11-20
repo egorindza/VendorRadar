@@ -1,0 +1,34 @@
+@model Matrix
+@{
+    ViewData["Title"] = "Матрица доступов";
+    var cells = Model.Grants.ToLookup(x => (x.EmployeeId, x.ContractId));
+}
+<section class="heading"><div><h1>Матрица доступов</h1><p>Роли сотрудников, API-ключи и использование оплаченных мест.</p></div>
+    @if (User.IsInRole(Roles.Security)) { <div class="actions"><a href="/people/templates" class="button secondary">Шаблоны должностей</a><a href="/people/hire" class="button primary">＋ Онбординг</a></div> }
+</section>
+<section class="panel"><div class="toolbar"><div><h2>Сотрудники и сервисы</h2><p class="muted">Выберите сотрудника, чтобы посмотреть историю доступов.</p></div>
+    <form method="get" action="/people" class="search"><input name="q" value="@ViewBag.Query" type="search" placeholder="Имя, почта или должность" aria-label="Поиск сотрудников" /><button class="button secondary">Найти</button></form></div>
+    @if (Model.Employees.Count == 0) { <p class="empty">Сотрудники не найдены.</p> }
+    else
+    {
+        <div class="table-wrap matrix"><table><thead><tr><th scope="col">Сотрудник</th>@foreach (var service in Model.Contracts) { <th scope="col"><a href="/contracts/@service.Id">@service.Name</a></th> }</tr></thead>
+        <tbody>@foreach (var employee in Model.Employees)
+        {
+            <tr><th scope="row"><a href="/people/@employee.Id"><strong>@employee.Name</strong><small>@employee.Department.Name · @Labels.Person(employee.Status)</small></a></th>
+            @foreach (var service in Model.Contracts)
+            {
+                <td>
+                @foreach (var grant in cells[(employee.Id, service.Id)].OrderByDescending(x => x.Role))
+                {
+                    <span class="badge @(grant.Role == AccessRole.Owner ? "warning" : grant.Role == AccessRole.Admin ? "info" : "neutral")">@(grant.Kind == AccessKind.ApiKey ? "Ключ · " : "")@grant.Role</span>
+                }
+                @if (!cells.Contains((employee.Id, service.Id))) { <span class="muted">—</span> }
+                </td>
+            }</tr>
+        }</tbody></table></div>
+    }
+</section>
+<section class="panel spaced"><div class="panel-head"><div><h2>Использование лицензий</h2><p>Простаивающее место закреплено за человеком без активности 30 дней и дольше.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Сервис</th><th>Оплачено</th><th>Назначено</th><th>Простаивает</th><th>Свободно</th></tr></thead>
+<tbody>@foreach (var seat in Model.Seats) { <tr><td><a class="text-link" href="/contracts/@seat.ContractId">@seat.Name</a></td><td>@seat.Paid</td><td>@seat.Assigned</td><td><span class="badge @(seat.Idle > 0 ? "warning" : "neutral")">@seat.Idle</span></td><td>@seat.Free</td></tr> }</tbody></table></div>
+</section>

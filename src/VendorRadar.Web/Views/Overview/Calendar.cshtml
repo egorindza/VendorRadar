@@ -1,0 +1,27 @@
+@model IReadOnlyList<Upcoming>
+@{ ViewData["Title"] = "Платёжный календарь"; int days = ViewBag.Days; DateOnly today = ViewBag.Today; }
+<section class="heading"><div><h1>Платёжный календарь</h1><p>Будущие списания и сроки, до которых можно отменить автопродление.</p></div><div class="actions">
+@foreach (var window in new[] { 30, 60, 90 }) { <a class="button @(window == days ? "primary" : "secondary")" href="/calendar?days=@window">@window дней</a> }
+</div></section>
+<div class="overview-grid calendar">
+    <section class="panel" id="notices">
+        <div class="panel-head"><div><h2>Окна отмены</h2><p>Пропущенные сроки показаны, пока платеж ещё впереди.</p></div><span class="tile peach">◷</span></div>
+        @foreach (var item in Model.Where(x => x.Kind == RadarKind.Notice))
+        {
+            <a class="radar-row" href="/contracts/@item.ContractId"><span class="tile service">@item.Name[0]</span><span class="radar-name"><strong>@item.Name</strong><small>@item.Category</small></span><span class="badge @(item.Date < today ? "danger" : item.Date <= today.AddDays(7) ? "warning" : "neutral")">@item.Date.ToString("dd MMM", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))</span></a>
+        }
+        @if (!Model.Any(x => x.Kind == RadarKind.Notice)) { <p class="empty">В этом периоде сроков отмены нет.</p> }
+    </section>
+    <section class="panel">
+        <div class="panel-head"><div><h2>Будущие платежи</h2><p>Суммы в валюте договора.</p></div><span class="tile mint">$</span></div>
+        @foreach (var month in Model.Where(x => x.Kind == RadarKind.Payment).GroupBy(x => new { x.Date.Year, x.Date.Month }))
+        {
+            <h3 class="calendar-month">@month.First().Date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))</h3>
+            @foreach (var item in month)
+            {
+                <a class="radar-row" href="/contracts/@item.ContractId"><span class="tile service">@item.Date.Day</span><span class="radar-name"><strong>@item.Name</strong><small>@item.Category</small></span><strong>@item.Cost.ToString("N2") @item.Currency</strong></a>
+            }
+        }
+        @if (!Model.Any(x => x.Kind == RadarKind.Payment)) { <p class="empty">В этом периоде платежей нет.</p> }
+    </section>
+</div>

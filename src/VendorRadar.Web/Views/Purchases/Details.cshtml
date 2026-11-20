@@ -1,0 +1,27 @@
+@model PurchaseDetails
+@{ ViewData["Title"] = Model.Item.Name; var item = Model.Item; }
+<a class="back-link" href="/purchases">‹ Заявки</a>
+<section class="heading"><div><div class="eyebrow subtle">@item.Domain · @item.Category</div><h1>@item.Name</h1><p>@item.Department.Name · @item.MonthlyCost.ToString("N2") @item.Currency в месяц</p></div><span class="badge neutral">@Labels.Purchase(item.State)</span></section>
+<div class="overview-grid">
+    <section class="panel"><div class="panel-head"><div><h2>Обоснование</h2><p>@item.CreatedBy · @item.CreatedAt.ToString("dd.MM.yyyy") UTC</p></div></div><div class="panel-tail readable">@item.Reason</div>
+    <div class="panel-head split"><div><h2>Действующие сервисы</h2><p>Совпадения по домену, названию или категории.</p></div></div>
+    @foreach (var match in Model.Duplicates) { <a class="radar-row" href="/contracts/@match.Id"><span class="tile service">@match.Name[0]</span><span class="radar-name"><strong>@match.Name</strong><small>@match.Domain</small></span><span class="badge @(match.Domain == item.Domain ? "warning" : "neutral")">@(match.Domain == item.Domain ? "Тот же домен" : "Возможная альтернатива")</span></a> }
+    @if (Model.Duplicates.Count == 0) { <p class="empty">Совпадений нет.</p> }
+    </section>
+    <section class="panel">
+        <div class="panel-head"><div><h2>Согласование</h2><p>Решения и комментарии по заявке.</p></div></div>
+        @foreach (var decision in item.Decisions.OrderBy(x => x.DecidedAt))
+        {
+            <div class="radar-row"><span class="tile mint">✓</span><span class="radar-name"><strong>@decision.Actor</strong><small>@decision.DecidedAt.ToString("dd.MM.yyyy HH:mm") UTC · @decision.Comment</small></span><span class="badge neutral">@Labels.Purchase(decision.ToState)</span></div>
+        }
+        @if (item.Decisions.Count == 0) { <p class="empty">Решений пока нет.</p> }
+        @if (Model.CanDecide)
+        {
+            <form method="post" action="/purchases/@item.Id/decision" class="panel-tail fields">
+                @Html.AntiForgeryToken()
+                <label>Комментарий<textarea name="comment" maxlength="400" rows="3" placeholder="Обязателен при совпадении или отклонении"></textarea></label>
+                <div class="actions"><button class="button primary" name="approve" value="true">Согласовать</button><button class="button danger-button" name="approve" value="false">Отклонить</button></div>
+            </form>
+        }
+    </section>
+</div>

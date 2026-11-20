@@ -1,0 +1,86 @@
+@model Overview
+@{
+    var peak = Math.Max(1, Model.Snapshot.Departments.Select(x => x.MonthlyUsd).DefaultIfEmpty(0).Max());
+    var urgent = Model.Notices.Where(x => x.Date <= Model.Today.AddDays(7)).Select(x => x.ContractId).Distinct().Count();
+    var next = Model.Notices.Take(5).ToList();
+    var showFinance = User.IsInRole(Roles.Finance);
+}
+<section class="heading">
+    <div><div class="eyebrow subtle">@Model.Organization.Name <span>·</span> @Model.Today.ToString("dd.MM.yyyy")</div><h1>Обзор подписок</h1><p>Контракты, расходы и доступы команды.</p></div>
+    <div class="actions"><a href="/calendar?days=30" class="button secondary"><span aria-hidden="true">▦</span> 30 дней</a>
+        @if (showFinance) { <a href="/reports/finance.pdf" class="button secondary"><span aria-hidden="true">⇩</span> PDF-отчёт</a> }
+    </div>
+</section>
+<section class="hero">
+    <div class="radar-graphic" aria-hidden="true"><span></span><span></span><span></span><i></i><i></i><i></i></div>
+    <div class="hero-copy">
+        <div class="eyebrow"><i></i> Радар продлений</div>
+        @if (urgent > 0)
+        {
+            <h2>Проверьте сроки отмены</h2><p>До отмены 7 дней или меньше, либо срок уже пропущен. Таких контрактов <strong>@urgent</strong>.</p>
+        }
+        else
+        {
+            <h2>Срочных дедлайнов нет</h2><p>Проверьте следующие списания и окна отмены в календаре.</p>
+        }
+        <a href="/calendar?days=30#notices" class="button hero-button">Открыть радар</a>
+    </div>
+</section>
+<div class="metrics">
+    <article class="metric"><div class="metric-title"><span class="tile mint" aria-hidden="true">$</span> Расходы в месяц</div><strong>@Labels.Money(Model.Snapshot.Mrr)</strong><small>MRR в USD · @Model.Snapshot.Spend.Count контрактов</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile lavender" aria-hidden="true">⌁</span> Годовой Run-Rate</div><strong>@Labels.Money(Model.Snapshot.Arr)</strong><small>ARR в USD · 12 × MRR</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile peach" aria-hidden="true">◷</span> Окна отмены</div><strong>@Model.Notices.Count</strong><small>@urgent контрактов требуют проверки</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile blue" aria-hidden="true">⊞</span> Простаивают</div><strong>@Model.Snapshot.Idle <span class="metric-unit">мест</span></strong><small>@Model.Snapshot.Free свободных мест отдельно</small></article>
+</div>
+@if (Model.Snapshot.Unpriced > 0)
+{
+    <div class="message error">Контрактов без курса на текущую дату <strong>@Model.Snapshot.Unpriced</strong>. Эти суммы исключены из MRR и ARR.
+        @if (showFinance) { <a href="/contracts/rates">Добавить курс</a> }
+    </div>
+}
+<div class="overview-grid">
+    <section class="panel">
+        <div class="panel-head"><div><h2>Сроки отмены</h2><p>Следующие окна уведомления поставщиков</p></div><a class="text-link" href="/calendar#notices">Все сроки</a></div>
+        @if (next.Count == 0) { <p class="empty">В выбранном периоде сроков нет.</p> }
+        else
+        {
+            <div class="radar-list">
+                @foreach (var item in next)
+                {
+                    var remaining = item.Date.DayNumber - Model.Today.DayNumber;
+                    <a class="radar-row" href="/contracts/@item.ContractId">
+                        <span class="tile service">@item.Name[0]</span>
+                        <span class="radar-name"><strong>@item.Name</strong><small>@item.Category</small></span>
+                        <span class="radar-date">@item.Date.ToString("dd.MM")</span>
+                        <span class="badge @(remaining < 0 ? "danger" : remaining <= 7 ? "warning" : "neutral")">@(remaining < 0 ? "Пропущен" : remaining == 0 ? "Сегодня" : $"{remaining} дн.")</span>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+    <section class="panel">
+        <div class="panel-head"><div><h2>По отделам</h2><p>Месячные расходы в USD</p></div><span class="tile mint" aria-hidden="true">▥</span></div>
+        <div class="spend-list">
+            @foreach (var dept in Model.Snapshot.Departments)
+            {
+                <div class="spend-row"><div><strong>@dept.Department</strong><span>@Labels.Money(dept.MonthlyUsd)</span></div><progress max="@peak" value="@dept.MonthlyUsd" aria-label="@dept.Department"></progress></div>
+            }
+            @if (Model.Snapshot.Departments.Count == 0) { <p class="empty">Расходы пока отсутствуют.</p> }
+        </div>
+    </section>
+</div>
+<div class="overview-grid lower">
+    <section class="panel">
+        <div class="panel-head"><div><h2>Активные чек-листы</h2><p>Выдача и отзыв доступов</p></div><a class="text-link" href="/people/runs">Все чек-листы</a></div>
+        @if (Model.ActiveRuns.Count == 0) { <p class="empty">Открытых чек-листов нет.</p> }
+        @foreach (var run in Model.ActiveRuns.Take(4))
+        {
+            var done = run.Tasks.Count(x => x.CompletedAt != null);
+            <a href="/people/runs/@run.Id" class="radar-row"><span class="tile lavender" aria-hidden="true">✓</span><span class="radar-name"><strong>@run.Employee.Name</strong><small>@Labels.Run(run.Kind)</small></span><span class="badge neutral">@done / @run.Tasks.Count</span></a>
+        }
+    </section>
+    <section class="panel">
+        <div class="panel-head"><div><h2>Заявки на ПО</h2><p>Ожидают решения <strong>@Model.Purchases</strong></p></div><a class="text-link" href="/purchases">К заявкам</a></div>
+        <div class="panel-tail"><a class="button secondary" href="/purchases/new">Подать заявку</a></div>
+    </section>
+</div>

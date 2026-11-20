@@ -1,0 +1,19 @@
+@model ContractDetails
+@inject TimeProvider Clock
+@{ ViewData["Title"] = Model.Item.Name; var item = Model.Item;
+   var today = DateOnly.FromDateTime(Clock.GetLocalNow().DateTime);
+   var next = BusinessRules.Payments(item, today, today.AddYears(1)).Cast<DateOnly?>().FirstOrDefault(); }
+<a class="back-link" href="/contracts">‹ Контракты</a>
+<section class="heading"><div><div class="eyebrow subtle">@item.Domain · @item.Category</div><h1>@item.Name</h1><p>@item.Department.Name · @(item.Active ? "Действующий контракт" : "В архиве")</p></div>
+@if (User.IsInRole(Roles.Finance)) { <a class="button primary" href="/contracts/edit/@item.Id">Редактировать</a> }
+</section>
+<div class="metrics">
+    <article class="metric"><div class="metric-title"><span class="tile mint">$</span> Стоимость цикла</div><strong>@item.Cost.ToString("N2") <span class="metric-unit">@item.Currency</span></strong><small>@Labels.Cycle(item.Cycle)</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile lavender">▦</span> Следующее списание</div><strong class="date-metric">@(next?.ToString("dd.MM.yyyy") ?? "—")</strong><small>@(item.AutoRenew ? "Автопродление включено" : "Автопродление отключено")</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile peach">◷</span> Уведомить до</div><strong class="date-metric">@(item.AutoRenew && next is { } payment ? payment.AddDays(-item.NoticeDays).ToString("dd.MM.yyyy") : "—")</strong><small>@item.NoticeDays дней до платежа</small></article>
+    <article class="metric"><div class="metric-title"><span class="tile blue">⊞</span> Оплаченные места</div><strong>@item.Seats</strong><small>@(Model.Seats?.Assigned ?? 0) назначено · @(Model.Seats?.Idle ?? 0) простаивает</small></article>
+</div>
+<section class="panel"><div class="panel-head"><div><h2>История стоимости</h2><p>Изменения тарифа и цикла платежей из SQL Server.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Версия с UTC</th><th>Стоимость</th><th>Цикл</th><th>Пользователь</th></tr></thead>
+<tbody>@foreach (var row in Model.History) { <tr><td>@row.ValidFrom.ToString("dd.MM.yyyy HH:mm")</td><td>@row.Cost.ToString("N2") @row.Currency</td><td>@Labels.Cycle(Enum.Parse<BillingCycle>(row.Cycle))</td><td>@row.ChangedBy</td></tr> }</tbody></table></div>
+</section>

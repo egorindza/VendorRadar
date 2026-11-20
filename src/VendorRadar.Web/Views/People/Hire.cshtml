@@ -1,0 +1,21 @@
+@model HireForm
+@{ ViewData["Title"] = "Онбординг"; var departments = (IReadOnlyList<Department>)ViewBag.Departments; var templates = (IReadOnlyList<JobTemplate>)ViewBag.Templates; }
+<a class="back-link" href="/people">‹ Матрица доступов</a>
+<section class="heading"><div><h1>Онбординг</h1><p>Создайте профиль сотрудника и чек-лист выдачи прав по должности.</p></div><a href="/people/templates" class="button secondary">Шаблоны должностей</a></section>
+<div class="overview-grid">
+<form class="panel form-panel fields" method="post" action="/people/hire">
+    @Html.AntiForgeryToken()
+    <label>Имя сотрудника<input asp-for="Name" required /></label>
+    <label>Рабочая почта<input asp-for="Email" type="email" required /></label>
+    <label>Отдел<select asp-for="DepartmentId" required><option value="">Выберите отдел</option>@foreach (var dept in departments) { <option value="@dept.Id">@dept.Name</option> }</select></label>
+    <label>Шаблон должности<select asp-for="TemplateId" required><option value="">Выберите шаблон</option>@foreach (var template in templates) { <option value="@template.Id">@template.Name</option> }</select></label>
+    <div><button class="button primary">Сформировать чек-лист</button></div>
+</form>
+<section class="panel">
+    <div class="panel-head"><h2>Доступы в шаблонах</h2></div>
+    @foreach (var template in templates)
+    {
+        <div class="radar-row"><span class="tile lavender">✓</span><span class="radar-name"><strong>@template.Name</strong><small>@string.Join(", ", template.Items.Select(x => $"{x.Contract.Name} ({x.Role})"))</small></span></div>
+    }
+</section>
+</div>

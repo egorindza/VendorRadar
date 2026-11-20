@@ -1,0 +1,16 @@
+@model IReadOnlyList<FxRate>
+@{ ViewData["Title"] = "Курсы валют"; }
+<a class="back-link" href="/contracts">‹ Контракты</a>
+<section class="heading"><div><h1>Курсы валют</h1><p>Для каждого дня берётся последний действующий курс к USD.</p></div></section>
+<div class="overview-grid"><section class="panel">
+    <div class="panel-head"><h2>История курсов</h2></div>
+    <div class="table-wrap"><table><thead><tr><th>Валюта</th><th>Действует с</th><th>USD за единицу</th></tr></thead>
+    <tbody>@foreach (var rate in Model) { <tr><td>@rate.Currency</td><td>@rate.EffectiveDate.ToString("dd.MM.yyyy")</td><td>@rate.UsdPerUnit.ToString("0.########")</td></tr> }</tbody></table></div>
+</section>
+<form class="panel form-panel fields" action="/contracts/rates" method="post">
+    @Html.AntiForgeryToken()<h2>Добавить курс</h2>
+    <label>Валюта<select name="currency"><option>EUR</option><option>GBP</option></select></label>
+    <label>Дата начала<input type="date" name="on" required /></label>
+    <label>USD за единицу<input type="number" name="usdPerUnit" min="0.00000001" max="100000" step="0.00000001" required /></label>
+    <div><button class="button primary">Сохранить</button></div>
+</form></div>

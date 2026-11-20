@@ -1,0 +1,5 @@
+@model AccessRun
+@{ ViewData["Title"] = Labels.Run(Model.Kind); }
+<div id="run" data-live-refresh hx-get="/people/runs/@Model.Id" hx-trigger="workspace-refresh" hx-target="this" hx-swap="innerHTML" hx-sync="this:drop">
+    <partial name="_Run" model="Model" />
+</div>

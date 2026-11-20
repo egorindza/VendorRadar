@@ -1,0 +1,16 @@
+@model IReadOnlyList<Contract>
+@{ ViewData["Title"] = "Контракты"; bool archived = ViewBag.Archived; }
+<section class="heading"><div><h1>Контракты</h1><p>Реестр SaaS-сервисов, лицензий и условий продления.</p></div>
+    @if (User.IsInRole(Roles.Finance)) { <div class="actions"><a class="button secondary" href="/contracts/rates">Курсы валют</a><a class="button primary" href="/contracts/edit">＋ Добавить контракт</a></div> }
+</section>
+<section class="panel">
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Статус контрактов"><a class="@(!archived ? "selected" : "")" href="/contracts">Действующие</a><a class="@(archived ? "selected" : "")" href="/contracts?archived=true">Архив</a></nav>
+        <form action="/contracts" class="search" method="get" hx-get="/contracts" hx-target="#contract-rows" hx-trigger="submit, input changed delay:300ms from:#contract-query" hx-sync="this:replace">
+            <input name="archived" type="hidden" value="@archived.ToString().ToLowerInvariant()" />
+            <input type="search" id="contract-query" name="q" value="@ViewBag.Query" placeholder="Сервис, домен или категория" aria-label="Поиск контрактов" />
+            <button class="button secondary">Найти</button>
+        </form>
+    </div>
+    <div id="contract-rows"><partial name="_Rows" model="Model" /></div>
+</section>

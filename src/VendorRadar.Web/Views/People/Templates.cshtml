@@ -1,0 +1,22 @@
+@model IReadOnlyList<Contract>
+@{ ViewData["Title"] = "Шаблоны должностей"; var templates = (IReadOnlyList<JobTemplate>)ViewBag.Templates; }
+<a class="back-link" href="/people/hire">‹ Онбординг</a>
+<section class="heading"><div><h1>Шаблоны должностей</h1><p>Выберите сервисы, которые входят в чек-лист новичка.</p></div></section>
+<div class="overview-grid">
+<section class="panel">
+    <div class="panel-head"><h2>Действующие шаблоны</h2></div>
+    @foreach (var template in templates)
+    {
+        <div class="radar-row"><span class="tile lavender">✓</span><span class="radar-name"><strong>@template.Name</strong><small>@string.Join(", ", template.Items.Select(x => $"{x.Contract.Name} ({x.Role})"))</small></span></div>
+    }
+</section>
+<form class="panel form-panel fields" method="post" action="/people/templates">
+    @Html.AntiForgeryToken()
+    <h2>Новый шаблон</h2><label>Должность<input name="name" maxlength="100" required /></label>
+    <label>Роль для выбранных сервисов<select name="role">@foreach (var role in Enum.GetValues<AccessRole>()) { <option>@role</option> }</select></label>
+    <fieldset><legend>Сервисы</legend><div class="check-grid">
+        @foreach (var service in Model) { <label class="check"><input type="checkbox" name="selected" value="@service.Id" /> @service.Name</label> }
+    </div></fieldset>
+    <div><button class="button primary">Сохранить шаблон</button></div>
+</form>
+</div>

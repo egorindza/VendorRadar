@@ -1,0 +1,86 @@
+@inject WorkspaceDirectory Directory
+@{
+    var loggedIn = User.Identity?.IsAuthenticated == true;
+    var path = Context.Request.Path.Value ?? "/";
+    var identity = loggedIn ? HttpActor.From(User) : null;
+    var account = Directory.Find(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
+    var workspace = account?.Hash is null ? DemoData.Tenants.FirstOrDefault(x => x.Id == identity?.TenantId).Name : null;
+    var navigation = new[] {
+        ("/", "⌂", "Обзор"),
+        ("/contracts", "▤", "Контракты"),
+        ("/calendar", "▦", "Платёжный календарь"),
+        ("/people", "⊞", "Матрица доступов"),
+        ("/people/runs", "✓", "Чек-листы доступов"),
+        ("/purchases", "◇", "Заявки на ПО")
+    };
+    bool IsActive(string url) => url switch {
+        "/" => path == "/",
+        "/people" => path.StartsWith("/people") && !path.StartsWith("/people/runs"),
+        _ => path.StartsWith(url)
+    };
+}
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}' />
+    <title>@(ViewData["Title"] ?? "Рабочее пространство") · VendorRadar</title>
+    <script src="/js/theme.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    <script defer src="/lib/htmx.min.js" asp-append-version="true"></script>
+    @if (loggedIn)
+    {
+        <script defer src="/lib/signalr.min.js" asp-append-version="true"></script>
+    }
+    <script defer src="/js/site.js" asp-append-version="true"></script>
+</head>
+<body data-authenticated="@(loggedIn ? "yes" : "no")">
+<a class="skip" href="#main">К содержимому</a>
+@if (loggedIn)
+{
+    <div class="shell">
+        <aside class="sidebar" id="sidebar">
+            <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span>Vendor<span>Radar</span></span></a>
+            <a class="workspace" href="/account/login?switchWorkspace=true">
+                <span class="workspace-icon" aria-hidden="true">@(workspace?.Substring(0, 1) ?? "V")</span>
+                <span><strong>@(workspace ?? "Организация")</strong><small>Сменить аккаунт</small></span><span class="workspace-chevron" aria-hidden="true">⌄</span>
+            </a>
+            <nav class="nav" aria-label="Разделы">
+                <span class="nav-label">Рабочее пространство</span>
+                @foreach (var (url, icon, label) in navigation)
+                {
+                    <a href="@url" aria-current="@(IsActive(url) ? "page" : null)"><span aria-hidden="true">@icon</span>@label</a>
+                }
+            </nav>
+            <div class="sidebar-foot">
+                <div class="profile"><span class="avatar" aria-hidden="true">@User.Identity!.Name![0]</span><span><strong>@User.Identity.Name</strong><small>@(workspace is null ? "Рабочий аккаунт" : "Демо-аккаунт")</small></span></div>
+                <form method="post" action="/account/logout">@Html.AntiForgeryToken()<button type="submit" class="logout" title="Выйти" aria-label="Выйти">↪</button></form>
+            </div>
+        </aside>
+        <div class="app-area">
+            <header class="topbar">
+                <div class="topbar-start"><button class="icon-button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Открыть меню">☰</button><span>Рабочее пространство</span><span class="breadcrumb-divider">/</span><strong>@(ViewData["Title"] ?? "VendorRadar")</strong></div>
+                <div class="topbar-end"><span class="live"><i data-live-dot></i><span data-live-text>Подключение</span></span><button type="button" data-theme-toggle class="icon-button" title="Сменить тему" aria-label="Сменить тему">◐</button></div>
+            </header>
+            <main class="page" id="main">
+                <partial name="_Messages" />
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    <header class="public-top">
+        <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span>Vendor<span>Radar</span></span></a>
+        <button type="button" data-theme-toggle class="icon-button" title="Сменить тему" aria-label="Сменить тему">◐</button>
+    </header>
+    <main class="public-page" id="main">
+        <partial name="_Messages" />
+        @RenderBody()
+    </main>
+}
+</body>
+</html>

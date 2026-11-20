@@ -1,0 +1,14 @@
+@model IReadOnlyList<PurchaseRequest>
+@{ ViewData["Title"] = "Заявки на ПО"; }
+<section class="heading"><div><h1>Заявки на ПО</h1><p>Новые подписки сначала проверяет руководитель отдела, затем финдиректор.</p></div><a class="button primary" href="/purchases/new">＋ Подать заявку</a></section>
+<section class="panel">
+@if (Model.Count == 0) { <p class="empty">Заявок пока нет.</p> }
+else
+{
+    <div class="table-wrap"><table><thead><tr><th>Сервис</th><th>Отдел</th><th>В месяц</th><th>Подана</th><th>Статус</th></tr></thead>
+    <tbody>@foreach (var item in Model)
+    {
+        <tr><td><a class="entity-link" href="/purchases/@item.Id"><span class="tile service">@item.Name[0]</span><span><strong>@item.Name</strong><small>@item.Domain</small></span></a></td><td>@item.Department.Name</td><td>@item.MonthlyCost.ToString("N2") @item.Currency</td><td>@item.CreatedAt.ToString("dd.MM.yyyy")</td><td><span class="badge @(item.State == PurchaseState.Approved ? "positive" : item.State == PurchaseState.Rejected ? "danger" : "neutral")">@Labels.Purchase(item.State)</span></td></tr>
+    }</tbody></table></div>
+}
+</section>

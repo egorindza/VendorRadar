@@ -1,0 +1,40 @@
+@model AccessRun
+@{
+    var count = Model.Tasks.Count;
+    var done = Model.Tasks.Count(x => x.CompletedAt is not null);
+    var closed = Model.CompletedAt is not null;
+    var offboarding = Model.Kind == RunKind.Offboarding;
+    var security = User.IsInRole(Roles.Security);
+    var canDownload = offboarding && closed && (security || User.IsInRole(Roles.Finance));
+}
+<a class="back-link" href="/people/runs">‹ Чек-листы доступов</a>
+<section class="heading"><div><div class="eyebrow subtle">@Labels.Run(Model.Kind)</div><h1>@Model.Employee.Name</h1><p>@Model.Employee.Job · Запустил @Model.StartedBy</p></div>
+<div class="actions"><a class="button secondary" href="/people/@Model.EmployeeId">Профиль сотрудника</a>@if (canDownload) { <a class="button primary" href="/people/runs/@Model.Id/closure.pdf">⇩ Подписанный PDF</a> }</div></section>
+<section class="panel run-status">
+    <div class="panel-head"><div><h2>@(closed ? done == count ? "Чек-лист закрыт" : "Онбординг прерван" : "Прогресс чек-листа")</h2><p>@done из @count подтверждено</p></div><span class="badge @(closed ? "positive" : "warning")">@(closed ? "Закрыт" : "В работе")</span></div>
+    <div class="panel-tail"><progress value="@(count == 0 ? 1 : done)" max="@Math.Max(1, count)" aria-label="Прогресс чек-листа"></progress></div>
+</section>
+<section class="panel spaced">
+    <div class="panel-head"><div><h2>@(offboarding ? "Отзыв доступов" : "Выдача доступов")</h2><p>Подтвердите действие после выполнения у поставщика.</p></div></div>
+    @if (count == 0) { <p class="empty">Учтённых доступов нет.</p> }
+    @foreach (var task in Model.Tasks.OrderBy(x => x.CompletedAt is not null).ThenByDescending(x => x.Role).ThenByDescending(x => x.Kind))
+    {
+        var completed = task.CompletedAt is not null;
+        var target = $"/people/runs/{Model.Id}/tasks/{task.Id}";
+        <article class="task-row">
+            <div class="task-name"><span class="tile @(completed ? "mint" : "service")">@(completed ? "✓" : task.ServiceName[0])</span>
+                <div><strong>@task.ServiceName</strong><small>@task.Role · @(task.Kind == AccessKind.ApiKey ? $"API-ключ · {task.AssetLabel}" : "Лицензия")</small></div></div>
+            @if (completed) { <div class="task-done"><span class="badge positive">Подтверждено</span><small>@task.CompletedBy · @task.Evidence</small></div> }
+            else if (closed) { <span class="badge neutral">Прервано</span> }
+            else if (security)
+            {
+                <form method="post" action="@target" hx-post="@target" hx-target="#run" hx-sync="#run:queue last" class="task-form">
+                    @Html.AntiForgeryToken()
+                    <input name="evidence" required maxlength="400" placeholder="Номер заявки или отметка" aria-label="Подтверждение для @task.ServiceName" />
+                    <button class="button secondary" type="submit">@(offboarding ? "Подтвердить отзыв" : "Подтвердить выдачу")</button>
+                </form>
+            }
+            else { <span class="badge warning">Ожидает IT</span> }
+        </article>
+    }
+</section>
